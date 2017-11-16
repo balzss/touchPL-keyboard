@@ -24,9 +24,9 @@ while(true){
 
 
 Vue.component('Code', {
-    props: ['ast'],
+    props: ['ast', 'hl'],
     template: 
-        '<div class="foldable" >' +
+        '<div class="foldable" :class="{hl: hl}" @keydown.enter="this.fold()">' +
             '<div v-if="ast.body && ast.body.type == \'BlockStatement\'">' +
                 '<div v-if="open" @click="open = false">{{this.getCode(2)}}</div>' +
                 '<div v-else>' +
@@ -35,12 +35,12 @@ Vue.component('Code', {
                 '</div>' +
             '</div>' +
             '<div v-else-if="ast.consequent && ast.consequent.type == \'BlockStatement\' ">' +
-                '<div v-if="open" @click="open = false">{{this.getCode(2)}}</div>' +
+                '<div v-if="open" @click="open = false">{{this.getCode(2)}}<span v-if="ast.alternate"> else { ... }</span></div>' +
                 '<div v-else>' +
                     '<div @click="open = true">{{this.getCode(1)}}</div>' +
                     '<Code v-for="i in ast.consequent.body" :ast="i"/>' +
                     '} <span v-if="ast.alternate">else {</span>' +
-            '<div v-if="ast.alternate && ast.alternate.type == \'BlockStatement\' ">' +
+                '<div v-if="ast.alternate && ast.alternate.type == \'BlockStatement\' ">' +
                         '<Code v-for="i in ast.alternate.body" :ast="i"/>}' +
                     '</div>' +
                 '</div>' +
@@ -53,6 +53,12 @@ Vue.component('Code', {
         return {
             open: false
         }
+    },
+    created: function () {
+        document.addEventListener('keyup', function(e){
+            console.log(e);
+            this.open = !this.open;
+        });
     },
     methods: {
         getCode: function(folded){
@@ -68,15 +74,39 @@ Vue.component('Code', {
             } else {
                 return astring.generate(fromAst);
             }
+        },
+        fold: function(e){
+            let key = e.which || e.keyCode;
+            if (e.keyCode  == 13) { // 13 is enter
+                this.open = !this.open;
+            }
         }
     }
 });
 
 Vue.component('App', {
     props: ['body'],
-    template: '<div id="app">' +
-                '<Code v-for="i in body" :ast="i"/>' +
-            '</div>'
+    template: '<div id="app" >' +
+                '<Code v-for="(i, index) in body" :ast="i" :hl="index == cursor"/>' +
+            '</div>',
+    data: function() {
+        return {
+            cursor: 0
+        }
+    },
+    created: function () {
+        window.addEventListener('keyup', this.keypress)
+    },
+    methods: {
+        keypress: function(e){
+            let key = e.which || e.keyCode;
+            if (key === 74 && this.cursor < this.body.length - 1) { // 13 is enter
+                this.cursor++;
+            } else if (key == 75 && this.cursor > 0) {
+                this.cursor--;
+            }
+        }
+    }
 });
 
 var app = new Vue({

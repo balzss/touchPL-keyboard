@@ -15,6 +15,9 @@ body {
 }
 
 .foldable {
-    /* border: 1px solid red; */
     padding-left: 56px;
+}
+
+.hl {
+    outline: red solid 1px;
 }
